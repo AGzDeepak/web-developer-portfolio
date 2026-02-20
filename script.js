@@ -19,6 +19,77 @@ const languageStats = document.getElementById("languageStats");
 
 const githubUsername = (document.body.dataset.githubUsername || "").trim();
 const githubLimit = Number.parseInt(document.body.dataset.githubLimit || "6", 10);
+const githubCacheKey = githubUsername
+  ? `portfolio:github:${githubUsername.toLowerCase()}`
+  : "";
+const githubCacheTtlMs = 1000 * 60 * 30;
+const githubApiTimeoutMs = 10000;
+
+const parseGithubCache = (value) => {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object") return null;
+    if (!Number.isFinite(parsed.cachedAt)) return null;
+    if (!parsed.profile || typeof parsed.profile !== "object") return null;
+    if (!Array.isArray(parsed.repos)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const readGithubCache = () => {
+  if (!githubCacheKey) return null;
+  try {
+    return parseGithubCache(localStorage.getItem(githubCacheKey));
+  } catch {
+    return null;
+  }
+};
+
+const writeGithubCache = (profile, repos) => {
+  if (!githubCacheKey) return;
+  try {
+    localStorage.setItem(
+      githubCacheKey,
+      JSON.stringify({ cachedAt: Date.now(), profile, repos })
+    );
+  } catch {
+    // Ignore quota/private-mode errors and continue with live rendering.
+  }
+};
+
+const isFreshGithubCache = (cacheEntry) =>
+  Boolean(cacheEntry) && Date.now() - cacheEntry.cachedAt < githubCacheTtlMs;
+
+const formatRateLimitReset = (unixSeconds) => {
+  const resetDate = new Date(unixSeconds * 1000);
+  if (Number.isNaN(resetDate.getTime())) return "later";
+  return resetDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+};
+
+const getRateLimitMessage = (response) => {
+  if (!response || response.status !== 403) return "";
+  const remaining = response.headers.get("x-ratelimit-remaining");
+  if (remaining !== "0") return "";
+  const resetHeader = response.headers.get("x-ratelimit-reset");
+  const resetSeconds = Number.parseInt(resetHeader || "", 10);
+  if (!Number.isFinite(resetSeconds)) {
+    return "GitHub API rate limit reached. Please try again later.";
+  }
+  return `GitHub API rate limit reached. Try again after ${formatRateLimitReset(resetSeconds)}.`;
+};
+
+const fetchWithTimeout = async (url, options = {}, timeoutMs = githubApiTimeoutMs) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 const revealObserver = new IntersectionObserver(
   (entries) => {
@@ -71,6 +142,11 @@ const markActiveNav = () => {
   navLinks.forEach((link) => {
     const isActive = link.getAttribute("href") === `#${activeId}`;
     link.classList.toggle("active", isActive);
+    if (isActive) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
   });
 };
 
@@ -228,7 +304,7 @@ const createRepoCard = (repo) => {
   const codeLink = document.createElement("a");
   codeLink.href = repo.html_url;
   codeLink.target = "_blank";
-  codeLink.rel = "noopener";
+  codeLink.rel = "noopener noreferrer";
   codeLink.textContent = "Code";
   actions.append(codeLink);
 
@@ -237,13 +313,54 @@ const createRepoCard = (repo) => {
     const liveLink = document.createElement("a");
     liveLink.href = homepage;
     liveLink.target = "_blank";
-    liveLink.rel = "noopener";
+    liveLink.rel = "noopener noreferrer";
     liveLink.textContent = "Live";
     actions.append(liveLink);
   }
 
   card.append(title, description, metrics, actions);
   return card;
+};
+
+const curateRepositories = (repos) =>
+  repos
+    .filter((repo) => !repo.fork && !repo.archived)
+    .sort((a, b) => {
+      const starDiff = (b.stargazers_count || 0) - (a.stargazers_count || 0);
+      if (starDiff !== 0) return starDiff;
+      return new Date(b.updated_at) - new Date(a.updated_at);
+    })
+    .slice(0, Number.isFinite(githubLimit) && githubLimit > 0 ? githubLimit : 6);
+
+const renderGitHubData = (profile, repos, options = {}) => {
+  if (!githubGrid || !projectStatus) return;
+
+  const { fromCache = false, staleCache = false } = options;
+  updateInsights(profile, repos);
+
+  if (githubProfileLink && profile.html_url) {
+    githubProfileLink.href = profile.html_url;
+  }
+
+  const curated = curateRepositories(repos);
+  if (!curated.length) {
+    projectStatus.textContent =
+      "No qualifying public repositories found. Add repositories to GitHub or keep fallback projects.";
+    return;
+  }
+
+  const cards = curated.map(createRepoCard);
+  githubGrid.replaceChildren(...cards);
+  registerRevealItems(cards);
+
+  if (!fromCache) {
+    projectStatus.textContent = `Showing ${curated.length} public repositories from @${githubUsername}.`;
+    return;
+  }
+
+  projectStatus.textContent = staleCache
+    ? `Showing ${curated.length} cached repositories from @${githubUsername} while live data refreshes.`
+    : `Showing ${curated.length} cached repositories from @${githubUsername}.`;
 };
 
 const loadPublicProjects = async () => {
@@ -259,14 +376,25 @@ const loadPublicProjects = async () => {
     githubProfileLink.href = `https://github.com/${githubUsername}`;
   }
 
-  projectStatus.textContent = `Loading public repositories from @${githubUsername}...`;
+  const cached = readGithubCache();
+  if (cached) {
+    renderGitHubData(cached.profile, cached.repos, {
+      fromCache: true,
+      staleCache: !isFreshGithubCache(cached),
+    });
+    if (isFreshGithubCache(cached)) return;
+  }
+
+  projectStatus.textContent = cached
+    ? `Refreshing public repositories from @${githubUsername}...`
+    : `Loading public repositories from @${githubUsername}...`;
 
   try {
     const [profileResponse, reposResponse] = await Promise.all([
-      fetch(`https://api.github.com/users/${encodeURIComponent(githubUsername)}`, {
+      fetchWithTimeout(`https://api.github.com/users/${encodeURIComponent(githubUsername)}`, {
         headers: { Accept: "application/vnd.github+json" },
       }),
-      fetch(
+      fetchWithTimeout(
         `https://api.github.com/users/${encodeURIComponent(githubUsername)}/repos?sort=updated&per_page=100`,
         {
           headers: { Accept: "application/vnd.github+json" },
@@ -275,46 +403,35 @@ const loadPublicProjects = async () => {
     ]);
 
     if (!profileResponse.ok || !reposResponse.ok) {
-      const status = !profileResponse.ok
-        ? profileResponse.status
-        : reposResponse.status;
-      throw new Error(`GitHub API request failed (${status})`);
+      const failedResponse = !profileResponse.ok ? profileResponse : reposResponse;
+      const rateLimitMessage = getRateLimitMessage(failedResponse);
+      if (rateLimitMessage) throw new Error(rateLimitMessage);
+      throw new Error(`GitHub API request failed (${failedResponse.status})`);
     }
 
     const [profile, repos] = await Promise.all([
       profileResponse.json(),
       reposResponse.json(),
     ]);
-
-    updateInsights(profile, repos);
-
-    if (githubProfileLink && profile.html_url) {
-      githubProfileLink.href = profile.html_url;
-    }
-
-    const curated = repos
-      .filter((repo) => !repo.fork && !repo.archived)
-      .sort((a, b) => {
-        const starDiff = (b.stargazers_count || 0) - (a.stargazers_count || 0);
-        if (starDiff !== 0) return starDiff;
-        return new Date(b.updated_at) - new Date(a.updated_at);
-      })
-      .slice(0, Number.isFinite(githubLimit) && githubLimit > 0 ? githubLimit : 6);
-
-    if (!curated.length) {
+    writeGithubCache(profile, repos);
+    renderGitHubData(profile, repos);
+  } catch (error) {
+    if (cached) {
+      renderGitHubData(cached.profile, cached.repos, { fromCache: true, staleCache: true });
       projectStatus.textContent =
-        "No qualifying public repositories found. Add repositories to GitHub or keep fallback projects.";
+        "Showing cached repositories because live GitHub data is temporarily unavailable.";
       return;
     }
 
-    const cards = curated.map(createRepoCard);
-    githubGrid.replaceChildren(...cards);
-    registerRevealItems(cards);
-
-    projectStatus.textContent = `Showing ${curated.length} public repositories from @${githubUsername}.`;
-  } catch (error) {
-    projectStatus.textContent =
-      "Could not load GitHub projects right now. Fallback projects are shown below.";
+    const isTimeout = error instanceof DOMException && error.name === "AbortError";
+    const isRateLimit =
+      error instanceof Error && error.message.includes("GitHub API rate limit");
+    const loadMessage = isRateLimit
+      ? `${error.message} Fallback projects are shown below.`
+      : isTimeout
+        ? "GitHub request timed out. Fallback projects are shown below."
+        : "Could not load GitHub projects right now. Fallback projects are shown below.";
+    projectStatus.textContent = loadMessage;
     if (languageStats) {
       languageStats.innerHTML =
         '<p class="muted">Could not load language stats right now.</p>';

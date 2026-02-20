@@ -8,13 +8,49 @@
       name="description"
       content="Deepak Kumar is a web developer focused on building performant, user-friendly products with clean frontend and reliable backend systems."
     />
+    <meta name="author" content="Deepak Kumar" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta name="theme-color" content="#05090c" />
+    <link rel="canonical" href="https://agzdeepak.github.io/web-developer-portfolio/" />
+    <link rel="sitemap" type="application/xml" href="sitemap.xml" />
+    <link rel="dns-prefetch" href="//api.github.com" />
+    <link rel="dns-prefetch" href="//avatars.githubusercontent.com" />
+    <link rel="preconnect" href="https://api.github.com" crossorigin />
+    <link rel="preconnect" href="https://avatars.githubusercontent.com" crossorigin />
+
     <meta property="og:title" content="Deepak Kumar | Web Developer Portfolio" />
     <meta
       property="og:description"
-      content="Portfolio with public projects, tech stack, experience, and contact."
+      content="Portfolio featuring full-stack projects, technical skills, live GitHub insights, and direct contact options."
     />
     <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://agzdeepak.github.io/web-developer-portfolio/"
+    />
+    <meta property="og:site_name" content="Deepak Kumar Portfolio" />
+    <meta property="og:locale" content="en_US" />
+    <meta
+      property="og:image"
+      content="https://agzdeepak.github.io/web-developer-portfolio/assets/deepak-kumar.jpg"
+    />
+    <meta property="og:image:alt" content="Portrait of Deepak Kumar" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Deepak Kumar | Web Developer Portfolio" />
+    <meta
+      name="twitter:description"
+      content="Full-stack web developer portfolio with projects, skills, and live GitHub metrics."
+    />
+    <meta
+      name="twitter:image"
+      content="https://agzdeepak.github.io/web-developer-portfolio/assets/deepak-kumar.jpg"
+    />
+
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -22,6 +58,8 @@
         "name": "Deepak Kumar",
         "jobTitle": "Web Developer",
         "email": "mailto:deepakyuoyt@gmail.com",
+        "url": "https://agzdeepak.github.io/web-developer-portfolio/",
+        "image": "https://agzdeepak.github.io/web-developer-portfolio/assets/deepak-kumar.jpg",
         "alumniOf": "Erode Sengunthar Engineering College",
         "sameAs": [
           "https://github.com/AGzDeepak",
@@ -29,23 +67,41 @@
         ]
       }
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body data-github-username="AGzDeepak" data-github-limit="6">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="grid-overlay" aria-hidden="true"></div>
     <div class="ambient ambient-a" aria-hidden="true"></div>
     <div class="ambient ambient-b" aria-hidden="true"></div>
 
-    <main>
+    <header class="site-header">
+      <div class="container">
+        <div class="shell-nav">
+          <a class="brand" href="#home">DEEPAK KUMAR</a>
+          <nav class="panel-nav" aria-label="Main">
+            <a href="#home" aria-current="page">Home</a>
+            <a href="#about">About</a>
+            <a href="#skills">Skills</a>
+            <a href="#projects">Projects</a>
+            <a href="#experience">Experience</a>
+          </nav>
+          <a class="contact-pill" href="#contact">Contact</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
       <section class="intro container section" id="home">
         <h1 data-reveal>DEEPAK KUMAR</h1>
-        <p data-reveal>Web developer building production-ready products</p>
+        <p data-reveal>
+          Full-stack developer building scalable, accessible web products for
+          measurable business outcomes.
+        </p>
+        <div class="intro-actions" data-reveal>
+          <a class="intro-btn primary" href="#projects">View Projects</a>
+          <a class="intro-btn secondary" href="#contact">Hire Me</a>
+        </div>
       </section>
 
       <section class="stage container section">
@@ -53,18 +109,6 @@
         <div class="deck deck-mid" aria-hidden="true"></div>
 
         <article class="shell" data-reveal>
-          <div class="shell-nav">
-            <a class="brand" href="#home">DEEPAK KUMAR</a>
-            <nav class="panel-nav" aria-label="Main">
-              <a href="#home">Home</a>
-              <a href="#about">About</a>
-              <a href="#skills">Skills</a>
-              <a href="#projects">Projects</a>
-              <a href="#experience">Experience</a>
-            </nav>
-            <a class="contact-pill" href="#contact">Contact</a>
-          </div>
-
           <div class="hero-grid">
             <article class="bio-card" data-reveal>
               <div class="hero-header">
@@ -153,6 +197,11 @@
                 class="github-avatar"
                 src="https://avatars.githubusercontent.com/u/223485797?v=4"
                 alt="GitHub profile avatar"
+                width="58"
+                height="58"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
               />
               <div>
                 <h3 id="githubName">AGzDeepak</h3>
@@ -234,7 +283,13 @@
           <p>Public Projects</p>
           <h2>Work samples from GitHub</h2>
         </div>
-        <p class="project-status" id="projectStatus" data-reveal>
+        <p
+          class="project-status"
+          id="projectStatus"
+          data-reveal
+          role="status"
+          aria-live="polite"
+        >
           Loading public repositories from @AGzDeepak...
         </p>
         <div class="github-grid" id="githubProjectGrid">
@@ -248,7 +303,7 @@
               <a
                 href="https://github.com/AGzDeepak/delaydetector"
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 >Code</a
               >
             </div>
@@ -263,7 +318,7 @@
               <a
                 href="https://github.com/AGzDeepak/LIBRARY-MANAGEMENT-SYSTEM"
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 >Code</a
               >
             </div>
@@ -278,7 +333,7 @@
               <a
                 href="https://github.com/AGzDeepak/library-management-system-nodejs"
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 >Code</a
               >
             </div>
@@ -316,20 +371,20 @@
       <section class="section container contact-section" id="contact">
         <article class="contact-card" data-reveal>
           <p>Open for collaboration</p>
-          <h2>Let us build your next product together.</h2>
+          <h2>Let&apos;s build your next product together.</h2>
           <div class="contact-links">
             <a href="mailto:deepakyuoyt@gmail.com">deepakyuoyt@gmail.com</a>
             <a
               id="githubProfileLink"
               href="https://github.com/AGzDeepak"
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               >GitHub Profile</a
             >
             <a
               href="https://www.linkedin.com/in/deepak-kumar-443509364/"
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               >LinkedIn</a
             >
             <a href="assets/deepak-kumar-resume.pdf" download>Download Resume</a>
@@ -342,6 +397,6 @@
       <p>&copy; <span id="year"></span> Deepak Kumar</p>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
   </body>
 </html>
