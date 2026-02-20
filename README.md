@@ -2,6 +2,10 @@
 
 Dark-themed developer portfolio built with plain HTML, CSS, and JavaScript.
 
+## Live Website
+
+- [View Online Portfolio](https://agzdeepak.github.io/web-developer-portfolio/)
+
 ## Included Professional Sections
 
 - Hero and positioning statement
